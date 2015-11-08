@@ -30,7 +30,7 @@ public class PersonDaoImpl implements PersonDao {
     @Autowired
     SessionFactory sessionFactory;
 
-    public void create(Person person, Long orgid) {
+    public Person create(Person person, Long orgid) {
         Session session = null;
         Transaction transaction = null;
 
@@ -48,13 +48,14 @@ public class PersonDaoImpl implements PersonDao {
             if (transaction != null) {
                 transaction.rollback();
             }
+            person = null;
         } finally {
             if (session != null) {
                 session.close();
             }
         }
 
-        return;
+        return person;
     }
 
     public Person get(long id) {

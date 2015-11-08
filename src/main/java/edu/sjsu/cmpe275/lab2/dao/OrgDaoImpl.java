@@ -100,7 +100,7 @@ public class OrgDaoImpl implements OrgDao{
                         organization.getAddress().getZip());
                 organizationOld.setAddress(address);
             }
-            session.update(organization);
+            session.update(organizationOld);
             transaction.commit();
         } catch (HibernateException e) {
             if (transaction != null) {

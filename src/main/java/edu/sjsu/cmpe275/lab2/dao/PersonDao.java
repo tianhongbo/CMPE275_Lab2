@@ -18,7 +18,7 @@ import edu.sjsu.cmpe275.lab2.model.Person;
  * PARTICULAR PURPOSE.
  */
 public interface PersonDao {
-    public void create(Person person, Long orgId);
+    public Person create(Person person, Long orgId);
     public Person get(long id);
     public Person update(Person person, Long orgId);
     public Person delete(long id);

@@ -1,20 +1,19 @@
-/*
 package edu.sjsu.cmpe275.lab2.controller;
 
+import edu.sjsu.cmpe275.lab2.dao.OrgDao;
 import edu.sjsu.cmpe275.lab2.model.Address;
 import edu.sjsu.cmpe275.lab2.model.Organization;
-import org.hibernate.HibernateException;
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import org.hibernate.Transaction;
+import edu.sjsu.cmpe275.lab2.model.Person;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-*/
+import java.util.LinkedList;
+
 /**
  * Project Name: cmpe275lab2
  * Packet Name: edu.sjsu.cmpe275.lab2.service
@@ -29,16 +28,14 @@ import org.springframework.web.bind.annotation.*;
  * KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
- *//*
-
-@RestController
+ */
+@Controller
 @RequestMapping("/org")
 public class ManageOrgController {
     @Autowired
-    SessionFactory sessionFactory;
+    OrgDao orgDao;
 
-    */
-/** (5) Create an organization object
+    /** (5) Create an organization object
      *
      * Method: POST
      * This API creates an organization object.
@@ -55,8 +52,7 @@ public class ManageOrgController {
      * @param state			Address of Organization
      * @param zip		    Address of Organization
      * @return			    Created Organization
-     *//*
-
+     */
 
     @RequestMapping(value="", method = RequestMethod.POST)
     public ResponseEntity createOrganization(@RequestParam(value = "name", required = true) String name,
@@ -65,33 +61,18 @@ public class ManageOrgController {
                                      @RequestParam(value = "city", required = false) String city,
                                      @RequestParam(value = "state", required = false) String state,
                                      @RequestParam(value = "zip", required = false) String zip) {
-        Session session = null;
-        Transaction transaction = null;
+
         Organization organization = new Organization();
         organization.setAddress(new Address(street,city,state,zip));
         organization.setDescription(description);
         organization.setName(name);
 
-        try {
-            session = sessionFactory.openSession();
-            transaction = session.beginTransaction();
-            session.save(organization);
-            transaction.commit();
-        } catch (HibernateException e) {
-            if (transaction != null) {
-                transaction.rollback();
-            }
-            return new ResponseEntity("Internal server error.", HttpStatus.INTERNAL_SERVER_ERROR);
-        } finally {
-            if (session != null) {
-                session.close();
-            }
-        }
+        orgDao.create(organization);
+
         return new ResponseEntity(organization, HttpStatus.OK);
     }
 
-    */
-/** (6) Get a organization<br>
+    /** (6) Get a organization<br>
      Path:org/{id}?format={json | xml | html} <br>
      Method: GET <br>
      This returns a full organization object with the given ID in the given format.
@@ -100,54 +81,47 @@ public class ManageOrgController {
      The format parameter is optional, and the value is case insensitive. If missing, JSON is assumed.
 
      * @param id			Description of a
-     * @param format			Description of b
      * @return			Description of c
-     *//*
+     */
 
+    @RequestMapping(value = "/{id}", method = RequestMethod.GET)
+    @ResponseBody
+    public ResponseEntity getOrganizationJson(@PathVariable("id") long id) {
 
-    @RequestMapping(value="/{id}", method = RequestMethod.GET)
-    public ResponseEntity getOrganization(@PathVariable("id") long id,
-                                          @RequestParam(value = "format", required = true) String format) {
-        Session session = null;
-        Transaction transaction = null;
-        Organization organization = null;
-        HttpHeaders httpHeaders = new HttpHeaders();
-
-        if ("json".equals(format)) {
-            httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-        } else if ("xml".equals(format)) {
-            httpHeaders.setContentType(MediaType.APPLICATION_XML);
-        } else if ("html".equals(format)) {
-            httpHeaders.setContentType(MediaType.TEXT_HTML);
+        Organization organization = orgDao.get(id);
+        if (organization == null) {
+            return new ResponseEntity(null, HttpStatus.NOT_FOUND);
         } else {
-            httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+            return new ResponseEntity(organization, HttpStatus.OK);
         }
+    }
 
-        try {
-            session = sessionFactory.openSession();
-            transaction = session.beginTransaction();
-            organization = (Organization)session.get(Organization.class, id);
-            if (organization == null) {
-                throw new HibernateException("can't find record with id = " + id);
-            }
-            transaction.commit();
-        } catch (HibernateException e) {
-            if (transaction != null) {
-                transaction.rollback();
-            }
-            return new ResponseEntity("can't find record with id = " + id, httpHeaders, HttpStatus.NOT_FOUND);
-        } finally {
-            if (session != null) {
-                session.close();
-            }
+    @RequestMapping(value = "/{id}", method = RequestMethod.GET, params = "format=xml",produces = MediaType.APPLICATION_XML_VALUE)
+    @ResponseBody
+    public ResponseEntity getOrganizationXml(@PathVariable("id") long id) {
+
+        Organization organization = orgDao.get(id);
+        if (organization == null) {
+            return new ResponseEntity(null, HttpStatus.NOT_FOUND);
+        } else {
+            return new ResponseEntity(organization, HttpStatus.OK);
         }
+    }
 
-        return new ResponseEntity(organization, httpHeaders, HttpStatus.OK);
+    @RequestMapping(value = "/{id}", method = RequestMethod.GET, params = "format=html",produces = MediaType.TEXT_HTML_VALUE)
+    public String getOrganizationHtml(@PathVariable("id") long id, Model model) {
+        Organization organization = orgDao.get(id);
+        if (organization == null) {
+            return "error404";
+        } else {
+            model.addAttribute("org", organization);
+            return "org";
+        }
     }
 
 
-    */
-/** Function and Requirement:
+
+    /** Function and Requirement:
      (7) Update an organization
      Path: org/{id}?name=XX description=YY street=ZZ ...
      Method: POST
@@ -167,8 +141,7 @@ public class ManageOrgController {
      * @param state			Address of Organization
      * @param zip		    Address of Organization
      * @return			Description of c
-     *//*
-
+     */
 
     @RequestMapping(value="/{id}", method = RequestMethod.POST)
     public ResponseEntity updateOrganization(@PathVariable("id") long id,
@@ -178,36 +151,26 @@ public class ManageOrgController {
                                      @RequestParam(value = "city", required = false) String city,
                                      @RequestParam(value = "state", required = false) String state,
                                      @RequestParam(value = "zip", required = false) String zip) {
-        Session session = null;
-        Transaction transaction = null;
-        Organization organization = null;
-        try {
-            session = sessionFactory.openSession();
-            transaction = session.beginTransaction();
-            organization = (Organization)session.get(Organization.class, id);
-            if (organization == null) {
-                throw new HibernateException("can't find organization with id = " + id);
-            }
-            organization.setDescription(description);
-            organization.setName(name);
+
+        Organization organization = new Organization();
+        organization.setId(id);
+        organization.setDescription(description);
+        organization.setName(name);
+        if(street != null || city != null || state != null || zip != null) {
             organization.setAddress(new Address(street, city, state, zip));
-            session.update(organization);
-            transaction.commit();
-        } catch (HibernateException e) {
-            if (transaction != null) {
-                transaction.rollback();
-            }
-            return new ResponseEntity("can't find organization with id = " + id, HttpStatus.NOT_FOUND);
-        } finally {
-            if (session != null) {
-                session.close();
-            }
         }
-        return new ResponseEntity(organization, HttpStatus.NOT_FOUND);
+
+        organization = orgDao.update(organization);
+
+        if (organization == null) {
+            return new ResponseEntity(null, HttpStatus.NOT_FOUND);
+        } else {
+            return new ResponseEntity(organization, HttpStatus.OK);
+        }
+
     }
 
-    */
-/** Delete an organization object
+    /** Delete an organization object
      (8) Delete an organization
      URL: http://org/{id}
      Method: DELETE
@@ -217,38 +180,24 @@ public class ManageOrgController {
      If the organization with the given ID does not exist, return 404.
      Return HTTP code 200 and the deleted object in JSON if the object is deleted;
 
-     * @param id			Description of a
+     * @param id			Organization id
      * @return			Description of c
-     *//*
-
+     */
 
     @RequestMapping(value="/{id}", method = RequestMethod.DELETE)
     public ResponseEntity deleteOrganization(@PathVariable("id") long id) {
-        Session session = null;
-        Transaction transaction = null;
-        Organization organization = null;
-        try {
-            session = sessionFactory.openSession();
-            transaction = session.beginTransaction();
-            organization = (Organization)session.get(Organization.class, id);
-            if(organization == null) {
-                throw new HibernateException("Can't find organization record with id = " + id);
-            }
-            session.delete(organization);
-            transaction.commit();
-        } catch (HibernateException e) {
-            if (transaction != null) {
-                transaction.rollback();
-            }
-            return new ResponseEntity("Can't find organization record with id = " + id, HttpStatus.NOT_FOUND);
-        } finally {
-            if (session != null) {
-                session.close();
+
+        Organization organization = orgDao.get(id);
+        if (organization == null) {
+            return new ResponseEntity(null, HttpStatus.NOT_FOUND);
+        } else {
+            organization = orgDao.delete(id);
+            if (organization == null) {
+                return new ResponseEntity(null, HttpStatus.BAD_REQUEST);
+            } else {
+                return new ResponseEntity(organization, HttpStatus.OK);
             }
         }
-        return new ResponseEntity(organization, HttpStatus.OK);
     }
 
-
 }
-*/

@@ -1,12 +1,15 @@
 package edu.sjsu.cmpe275.lab2.model;
 
 
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
 
 import javax.persistence.*;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -27,7 +30,7 @@ import java.util.List;
 @Entity
 @Table(name = "ORGANIZATION")
 
-@JsonIdentityInfo(generator=ObjectIdGenerators.IntSequenceGenerator.class, property = "id")
+//@JsonIdentityInfo(generator=ObjectIdGenerators.IntSequenceGenerator.class, property = "id")
 public class Organization {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -89,10 +92,22 @@ public class Organization {
         this.address = address;
     }
 
+    @JsonIgnore
     public List<Person> getPersons() {
         return persons;
     }
 
+    @JsonGetter(value = "persons")
+    public List<Long> getPersonsId() {
+        List<Long> list = new LinkedList<Long>();
+        if (getPersons() == null) {
+            return list;
+        }
+        for (Person p : getPersons()) {
+            list.add(p.getId());
+        }
+        return list;
+    }
     public void setPersons(List<Person> persons) {
         this.persons = persons;
     }

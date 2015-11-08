@@ -9,7 +9,7 @@
 <p>Description: <span th:text="${org.description}"></span></p>
 
 <p>Address: </p>
-<div>
+<div th:if="${org.address != null}">
 
     <ul>
         <li>
@@ -33,10 +33,10 @@
 </div>
 
 <p>Persons:</p>
-<div>
+<div th:if="${org.persons != null}">
 
     <ul>
-        <li th:each="stat1 : ${org.persons}" >
+        <li th:each="stat1 : ${org.persons}">
             <div>
                 <p>ID: <span th:text="${stat1.id}"></span></p>
 

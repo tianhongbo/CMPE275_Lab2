@@ -1,22 +1,15 @@
-/*
 package edu.sjsu.cmpe275.lab2.controller;
 
-import edu.sjsu.cmpe275.lab2.model.Person;
-import org.hibernate.HibernateException;
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import org.hibernate.Transaction;
+import edu.sjsu.cmpe275.lab2.dao.FriendshipDao;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.ResponseBody;
 
-import java.util.List;
-
-*/
 /**
  * Project Name: cmpe275lab2
  * Packet Name: edu.sjsu.cmpe275.lab2.service
@@ -31,17 +24,15 @@ import java.util.List;
  * KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
- *//*
-
-@RestController
+ */
+@Controller
 @RequestMapping("/friends")
 public class ManageFriendshipController {
 
     @Autowired
-    SessionFactory sessionFactory;
+    FriendshipDao friendshipDao;
 
-    */
-/** Add a friendship object
+    /** Add a friendship object
      (9) Add a friend
      Path:friends/{id1}/{id2}
      Method: PUT
@@ -55,55 +46,22 @@ public class ManageFriendshipController {
      * @param a			Description of a
      * @param b			Description of b
      * @return			Description of c
-     *//*
-
+     */
 
     @RequestMapping(value="/{id1}/{id2}", method = RequestMethod.PUT)
+    @ResponseBody
     public ResponseEntity createFriendship(@PathVariable("id1") long id1,
                                    @PathVariable("id2") long id2) {
-        Session session = null;
-        Transaction transaction = null;
-        Person person1 = null, person2 = null;
+        int result = friendshipDao.create(id1, id2);
 
-        try {
-            session = sessionFactory.openSession();
-            transaction = session.beginTransaction();
-            person1 = (Person) session.get(Person.class, id1);
-            person2 = (Person) session.get(Person.class, id2);
-            if(person1 == null || person2 == null) {
-                throw new HibernateException("Can't find persons with id1 = " + id1 + " and id2 = " + id2);
-            }
-            List<Person> f = person1.getFriends();
-            if (!f.contains(person2)) {
-                f.add(person2);
-            }
-            person1.setFriends(f);
-            session.update(person1);
-
-            f = person2.getFriends();
-            if (!f.contains(person1)) {
-                f.add(person1);
-            }
-            person2.setFriends(f);
-            session.update(person2);
-
-            transaction.commit();
-        } catch (HibernateException e) {
-            if (transaction != null) {
-                transaction.rollback();
-            }
-            return new ResponseEntity("Can't find persons with id1 = " + id1 + " and id2 = " + id2, HttpStatus.NOT_FOUND);
-        } finally {
-            if (session != null) {
-                session.close();
-            }
+        if (result == 0) {
+            return new ResponseEntity(new String[]{"Create friendship successfuly"},HttpStatus.OK);
+        } else {
+            return new ResponseEntity(new String[]{"Can not find persons"},HttpStatus.NOT_FOUND);
         }
-
-        return new ResponseEntity("Created the friendship between id1 = " + id1 + " and id2 = " + id2, HttpStatus.OK);
     }
 
-    */
-/** Remove a friendship object
+    /** Remove a friendship object
      (10) Remove a friend
      Path:friends/{id1}/{id2}
      Method: DELETE
@@ -116,51 +74,18 @@ public class ManageFriendshipController {
      * @param a			Description of a
      * @param b			Description of b
      * @return			Description of c
-     *//*
-
+     */
 
     @RequestMapping(value="/{id1}/{id2}", method = RequestMethod.DELETE)
+    @ResponseBody
     public ResponseEntity deleteFriendship(@PathVariable("id1") long id1,
                                    @PathVariable("id2") long id2) {
-        Session session = null;
-        Transaction transaction = null;
-        Person person1 = null, person2 = null;
-        try {
-            session = sessionFactory.openSession();
-            transaction = session.beginTransaction();
-            person1 = (Person)session.get(Person.class, id1);
-            person2 = (Person)session.get(Person.class, id2);
-            if (person1 == null || person2 == null) {
-                throw new HibernateException("can't find person records with id1 = " + id1 + " and id2 = " + id2);
-            }
-            List<Person> l = person1.getFriends();
-            if (l.contains(person2)) {
-                l.remove(person2);
-            }
-            person1.setFriends(l);
-
-            l = person2.getFriends();
-            if (l.contains(person1)) {
-                l.remove(person1);
-            }
-            person2.setFriends(l);
-
-            session.update(person1);
-            session.update(person2);
-            transaction.commit();
-        } catch (HibernateException e) {
-            if (transaction != null) {
-                transaction.rollback();
-            }
-            return new ResponseEntity("can't find person records with id1 = " + id1 + " and id2 = " + id2, HttpStatus.NOT_FOUND);
-
-        } finally {
-            if (session != null) {
-                session.close();
-            }
+        int result = friendshipDao.delete(id1, id2);
+        if (result == 0){
+            return new ResponseEntity(new String[]{"Delete friendship successfuly"}, HttpStatus.OK);
+        } else {
+            return new ResponseEntity(new String[]{"Can not find persons"}, HttpStatus.NOT_FOUND);
         }
-        return new ResponseEntity("you have deleted a friendship.", HttpStatus.OK);
     }
 
 }
-*/

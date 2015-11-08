@@ -1,9 +1,12 @@
 package edu.sjsu.cmpe275.lab2.model;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
 import javax.persistence.*;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -23,7 +26,7 @@ import java.util.List;
  */
 @Entity
 @Table(name = "PERSON")
-@JsonIdentityInfo(generator=ObjectIdGenerators.IntSequenceGenerator.class, property = "id")
+//@JsonIdentityInfo(generator=ObjectIdGenerators.IntSequenceGenerator.class, property = "internalId")
 public class Person {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -126,9 +129,20 @@ public class Person {
     public void setOrg(Organization org) {
         this.org = org;
     }
-
+    @JsonIgnore
     public List<Person> getFriends() {
         return friends;
+    }
+
+    @JsonGetter(value = "friends")
+    public List<Long> getFriendsId() {
+        List<Long> list = new LinkedList<>();
+        if (getFriends() != null) {
+            for (Person person : getFriends()){
+                list.add(person.getId());
+            }
+        }
+        return list;
     }
 
     public void setFriends(List<Person> friends) {

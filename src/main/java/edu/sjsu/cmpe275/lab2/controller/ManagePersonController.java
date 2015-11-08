@@ -1,21 +1,20 @@
-/*
 package edu.sjsu.cmpe275.lab2.controller;
 
+import edu.sjsu.cmpe275.lab2.dao.PersonDao;
 import edu.sjsu.cmpe275.lab2.model.Address;
 import edu.sjsu.cmpe275.lab2.model.Organization;
 import edu.sjsu.cmpe275.lab2.model.Person;
-import org.hibernate.HibernateException;
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import org.hibernate.Transaction;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-*/
+import java.util.LinkedList;
+
 /**
  * Project Name: cmpe275lab2
  * Packet Name: edu.sjsu.cmpe275.lab2.service
@@ -30,18 +29,16 @@ import org.springframework.web.bind.annotation.*;
  * KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
  * PARTICULAR PURPOSE.
- *//*
-
-@RestController
+ */
+@Controller
 @RequestMapping("/person")
 public class ManagePersonController {
 
     @Autowired
-    SessionFactory sessionFactory;
+    PersonDao personDao;
 
 
-    */
-/** Create a person object
+    /** Create a person object
      * 1 Path: person?firstname=XX&lastname=YY& email=ZZ&description=UU&street=VV$...
      * Method: POST
      * This API creates a person object.
@@ -58,8 +55,7 @@ public class ManagePersonController {
      * @param a			Description of a
      * @param b			Description of b
      * @return			Description of c
-     *//*
-
+     */
 
     @RequestMapping(value="", method = RequestMethod.POST)
     public ResponseEntity<?> createPerson(@RequestParam(value = "firstname", required = true) String firstname,
@@ -72,45 +68,23 @@ public class ManagePersonController {
                                @RequestParam(value = "zip", required = false) String zip,
                                @RequestParam(value = "orgid", required = false) Long orgid) {
 
-        Session session = null;
-        Transaction transaction = null;
         Organization organization = null;
 
         Person person = new Person();
         person.setEmail(email);
         person.setFirstname(firstname);
         person.setLastname(lastname);
-
         person.setAddress(new Address(street,city,state,zip));
         person.setDescription(description);
 
-        try {
-            session = sessionFactory.openSession();
-            transaction = session.beginTransaction();
-            if(orgid != null) {
-                organization = (Organization)session.get(Organization.class, orgid);
-                person.setOrg(organization);
-            }
-
-            session.save(person);
-            transaction.commit();
-
-        } catch (HibernateException e) {
-            if (transaction != null) {
-                transaction.rollback();
-            }
-            return new ResponseEntity<Object>("Internal server error.", HttpStatus.INTERNAL_SERVER_ERROR);
-        } finally {
-            if (session != null) {
-                session.close();
-            }
+        person = personDao.create(person, orgid);
+        if (person == null) {
+            return  new ResponseEntity<Object>(HttpStatus.BAD_REQUEST);
         }
-
         return new ResponseEntity<Object>(person, HttpStatus.OK);
     }
 
-    */
-/** Get a person object
+    /** Get a person object
      2 Path: person/ {id}?format={json | xml | html}
      Method: GET
      This returns a full person object with the given ID in the given format in its HTTP payload.
@@ -130,51 +104,52 @@ public class ManagePersonController {
      * @param a			Description of a
      * @param b			Description of b
      * @return			Description of c
-     *//*
+     */
 
+   // @RequestMapping(value = "/{id}", method = RequestMethod.GET, params = "format=json", produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "/{id}", method = RequestMethod.GET)
 
-    @RequestMapping(value="/{id}", method = RequestMethod.GET)
-    public ResponseEntity<?> getPerson(@PathVariable("id") long id,
-                                       @RequestParam(value = "format", required = true) String format) {
-        Transaction transaction = null;
-        Session session = null;
+    @ResponseBody
+    public ResponseEntity<?> getPersonJson(@PathVariable("id") long id) {
         Person person = null;
-        HttpHeaders httpHeaders = new HttpHeaders();
+        person = personDao.get(id);
 
-        if ("json".equals(format)) {
-            httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-        } else if ("xml".equals(format)) {
-            httpHeaders.setContentType((MediaType.APPLICATION_XML));
-        } else if ("html".equals(format)) {
-            httpHeaders.setContentType(MediaType.TEXT_HTML);
+        if(person == null) {
+            return new ResponseEntity<Object>(null, HttpStatus.NOT_FOUND);
         } else {
-            httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+            return new ResponseEntity<>(person, HttpStatus.OK);
         }
-
-        try {
-            session = sessionFactory.openSession();
-            transaction = session.beginTransaction();
-            person = (Person)session.get(Person.class, id);
-            if(person == null) {
-                throw new HibernateException("Can't find record with id = " + id);
-            }
-            transaction.commit();
-
-        } catch (HibernateException e) {
-            if (transaction != null) {
-                transaction.rollback();
-            }
-            return new ResponseEntity<Object>("Can't find record with id = " + id, httpHeaders, HttpStatus.NOT_FOUND);
-        } finally {
-            if (session != null) {
-                session.close();
-            }
-        }
-        return new ResponseEntity<>(person, httpHeaders, HttpStatus.OK);
     }
 
-    */
-/** Update a person object
+
+
+   @RequestMapping(value = "/{id}", method = RequestMethod.GET, params = "format=xml", produces = MediaType.APPLICATION_XML_VALUE)
+    @ResponseBody    public ResponseEntity<?> getPersonXml(@PathVariable("id") long id) {
+        Person person = null;
+        person = personDao.get(id);
+
+        if(person == null) {
+            return new ResponseEntity<Object>(null, HttpStatus.NOT_FOUND);
+        } else {
+            return new ResponseEntity<>(person, HttpStatus.OK);
+        }
+    }
+
+
+
+
+   @RequestMapping(value = "/{id}", method = RequestMethod.GET, params = "format=html", produces = MediaType.TEXT_HTML_VALUE)
+    public String getPersonHtml(@PathVariable("id") long id, Model model) {
+        Person person = null;
+        person = personDao.get(id);
+        if (person == null) {
+            return "error404";
+        }else {
+            model.addAttribute("person", person);
+            return "person";
+        }
+    }
+    /** Update a person object
      3 Path: person /{id} ?firstname=XX&lastname=YY& email=ZZ&description=UU&street=VV$...
      Method: POST
      This API updates a person object.
@@ -191,8 +166,7 @@ public class ManagePersonController {
      * @param a			Description of a
      * @param b			Description of b
      * @return			Description of c
-     *//*
-
+     */
 
     @RequestMapping(value="/{id}", method = RequestMethod.POST)
     public ResponseEntity<?> updatePerson(@PathVariable("id") long id,
@@ -205,40 +179,27 @@ public class ManagePersonController {
                                @RequestParam(value = "state", required = false) String state,
                                @RequestParam(value = "zip", required = false) String zip,
                                @RequestParam(value = "orgid", required = false) Long orgid) {
-        Session session = null;
-        Transaction transaction = null;
-        Person person = null;
 
-        try {
-            session = sessionFactory.openSession();
-            transaction = session.beginTransaction();
-            person = (Person)session.get(Person.class, id);
-            if(person == null) {
-                throw new HibernateException("Can't find any record with id = " + id);
-            }
-            person.setDescription(description);
+        Person person = new Person();
+        person.setId(id);
+        person.setDescription(description);
+        if (street != null || city != null || state != null || zip != null) {
             person.setAddress(new Address(street,city,state,zip));
-            person.setLastname(lastname);
-            person.setFirstname(firstname);
-            person.setEmail(email);
-            session.update(person);
-            transaction.commit();
-
-        } catch (HibernateException e) {
-            if(transaction != null) {
-                transaction.rollback();
-            }
-            return new ResponseEntity<Object>("Can't find any record with id = " + id, HttpStatus.NOT_FOUND);
-        } finally {
-            if(session != null) {
-                session.close();
-            }
         }
-        return new ResponseEntity<Object>(person, HttpStatus.OK);
+        person.setLastname(lastname);
+        person.setFirstname(firstname);
+        person.setEmail(email);
+
+        person = personDao.update(person, orgid);
+
+        if (person == null){
+            return new ResponseEntity<Object>(null, HttpStatus.NOT_FOUND);
+        } else {
+            return new ResponseEntity<Object>(person, HttpStatus.OK);
+        }
     }
 
-    */
-/** Delete a person object
+    /** Delete a person object
      (4) Delete a person
      URL: h ttp://person/{ id}
      Method: DELETE
@@ -251,52 +212,18 @@ public class ManagePersonController {
      * @param a			Description of a
      * @param b			Description of b
      * @return			Description of c
-     *//*
-
+     */
 
     @RequestMapping(value="/{id}", method = RequestMethod.DELETE)
     public ResponseEntity deletePerson(@PathVariable("id") long id) {
-        Session session = null;
-        Transaction transaction = null;
-        Person person = null;
-        try {
-            session = sessionFactory.openSession();
-            transaction = session.beginTransaction();
-            person = (Person)session.get(Person.class, id);
-            if (person == null) {
-                throw new HibernateException("Can't find the record with id = " + id);
-            }
 
-            //delete friendship
-            for(Person p : person.getFriends()) {
-                java.util.List<Person> f = p.getFriends();
-                if(f.contains(person)) {
-                    f.remove(person);
-                    session.update(p);
-                }
-            }
+        Person person = personDao.delete(id);
 
-            //delete this friendship
-            person.setFriends(null);
-            session.update(person);
-
-            //delete this person
-            session.delete(person);
-
-            transaction.commit();
-
-        } catch (HibernateException e) {
-            if(transaction != null) {
-                transaction.rollback();
-            }
-            return new ResponseEntity("Can't find the record with id = " + id, HttpStatus.NOT_FOUND);
-        } finally {
-            if(session != null) {
-                session.close();
-            }
+        if (person == null) {
+            return new ResponseEntity(null, HttpStatus.NOT_FOUND);
+        } else {
+            return new ResponseEntity(person, HttpStatus.OK);
         }
-        return new ResponseEntity(person, HttpStatus.OK);
     }
 
 }
-*/

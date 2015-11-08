@@ -20,7 +20,7 @@
 <!--<p>Address: <span th:text="${person.address}"></span></p>-->
 <!--<p>Address: <span th:text="${person.address.state}"></span></p>-->
 <p>Address: </p>
-<div>
+<div th:if="${person.address != null}">
 
    <ul>
       <li>
@@ -44,7 +44,7 @@
 </div>
 
 <p>Organization: </p>
-<div>
+<div th:if="${person.org != null}">
 
    <ul>
       <li>
@@ -65,7 +65,7 @@
          <div>
             <p>Address:</p>
 
-            <div>
+            <div th:if="${person.org.address != null}">
 
                <ul>
                   <li>
@@ -95,7 +95,7 @@
          <div>
 
             <p>Persons:</p>
-             <div>
+             <div th:if="${person.org.persons != null}">
 
                <ul>
                   <li th:each="stat1 : ${person.org.persons}" >
@@ -123,7 +123,7 @@
 
    <ul>
       <li th:each="stat : *{friends}" >
-         <div>
+         <div th:if="${stat != null}">
             <p>ID: <span th:text="${stat.id}"></span></p>
 
          </div>
